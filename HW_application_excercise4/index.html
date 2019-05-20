@@ -1,0 +1,102 @@
+<html>
+    <h1>Hello World!</h1>
+    <form>
+        Enter a start date :
+        <input type="date" name="sdate" id="sdate" ><br>
+        Enter a end date   :
+        <input type="date" name="edate" id="edate" ><br>
+        <input type="submit" value="Submit"  onclick="UserAction(document.getElementById('sdate').value,document.getElementById('edate').value)"></input>
+      </form>
+      
+      <body>
+      <script>
+         var req = new XMLHttpRequest();
+         var FLRTime = [] ;
+         var CMETime = [];
+          function UserAction(a,b) {
+         
+           // const url = 'http://demo9817079.mockable.io/FLR';
+               const url =  'https://api.nasa.gov/DONKI/FLR?startDate='+a+'&endDate='+b+'&api_key=DEMO_KEY'
+               req.open('GET',url ,false);     
+               req.onload = function () {
+                    if(this.response) {
+                        var data = JSON.parse(this.response);
+
+                         data.map(X => FLRTime.push(X.beginTime));
+
+                         console.log( "FLRTime length" , FLRTime.length);
+
+                        callCMEApi(a,b);
+                    }  else  {
+                       alert("There are no active FLR events for the given date range to compare with CME . Please search with different dates");
+                   }
+               }
+               req.send();
+}
+
+function callCMEApi (beginTime , endTime ) {
+                //const url = 'http://demo9817079.mockable.io/cme'; //(mock i created to check for same time stamp event)
+               const url =  'https://api.nasa.gov/DONKI/CME?startDate='+beginTime+'&endDate='+endTime+'&api_key=DEMO_KEY'
+                req.open('GET',url ,false);
+                req.onload = function () {
+                    if(this.response) {
+                        var data = JSON.parse(this.response);
+                        console.log(data);
+                         data.map(X => CMETime.push(X.startTime));
+                         console.log( "CMETime length" , CMETime.length);
+                         compareTimeStamps(CMETime,FLRTime);
+                    }  else  {
+                       alert("There are no active CME events for the given date range to compare with FLR . Please search with different dates");
+                   }
+               }
+               req.send();
+}
+
+function compareTimeStamps (CMtime,Fltime) {
+    let result = [];
+    let i = 0;
+    let j = 0;
+    let diff = 0;
+    let mindiff = Number.MAX_VALUE;
+    let min1 =-1;
+    let min2 =-1;
+    
+    while(i < CMtime.length && j < Fltime.length){
+        var CMTimeinseconds = new Date (CMtime[i]).getTime();
+        var FLTimeinseconds = new Date (Fltime[j]).getTime();
+        console.log(CMTimeinseconds);
+
+        if(CMTimeinseconds === FLTimeinseconds){
+            if(!result.includes(CMTimeinseconds)) result.push(CMTimeinseconds);
+            i++;
+            j++;
+           
+        }
+        else if(CMTimeinseconds < FLTimeinseconds) {
+            diff = FLTimeinseconds - CMTimeinseconds;
+            if(diff < mindiff) {
+                mindiff = diff;
+                min1 =  CMTimeinseconds;
+                min2 = FLTimeinseconds;
+            }
+            i++; }
+
+        else j++;
+    }
+
+    if(result.length === 0) {
+
+    console.log("There were no exact timestamp when both Events Closest timeStamps" ,new Date (min1) , new Date (min2));
+    document.write("<p>There were no exact timestamp where both events occured together , but the closest occurance timeStamps in the given date range are </p> <p> CME time --> " , new Date (min1) , " </p>  <p>FLRTime --> "  ,new Date (min2) ,"</p>")
+    }
+    else {
+       
+        result.forEach(X=> document.write( "Here is the time when both events occured together : " ,new Date (X)));
+    }
+}
+
+        </script>
+    </body>
+</html>
+
+<!--length//["0"].beginTime->
